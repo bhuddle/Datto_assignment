@@ -1,0 +1,23 @@
+N gateways with M repeaters each on simulated network
+
+gateway = access point
+repeater = access point
+
+each AP should have randomized check in time offset from 0.00 to 5.00
+
+each AP should check in total of 3 times & run 2 processes
+
+Checkin#1 - AP download_firmware = TRUE
+Process#1 - AP download firmware rand between 0 to 5
+checkin#2 - AP download_complete = TRUE
+process#2 - AP upgrade firmware rand 0 to 5
+checkin#3 - AP upgrade_complete = TRUE
+
+AP RULE - AP check in at precisely 5.00 min interval beginning from checking offset time
+	IF AP has not finished download or upgrade within 5 minute interval WAIT for 5 min check in and check in again
+	then proceed
+
+GW RULE - GW must wait to begin upgrade process until each RP is download_complete = TRUE
+
+RP RULE - RP can check in if (RP ! begun proc#2 and GW ! begun proc#2) OR (RP and GW == upgrade_complete)
+
