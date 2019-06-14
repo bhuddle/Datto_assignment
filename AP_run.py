@@ -89,18 +89,34 @@ class RP(AP):
     def RP_checkin(self, gw):
         if ((self.download_complete != True and gw.download_complete != True)
                 or (self.upgrade_complete == True and gw.upgrade_complete == True)):
+    
+            if (self.checkin_offset == 0.00):
+                self.checkin_offset = self.get_rand_checkin_time()
+                self.current_time += self.checkin_offset
+        
+        
             if (self.download_firmware == False):
                 #begin download
                 self.download_firmware = True
+                self.download_time = self.RP_process()
+                self.current_time += self.download_time
             elif (self.download_complete == False):
                 #download complete, update
                 self.download_complete = True
             else:
                 self.upgrade_complete = True
+    
             
         
     def RP_process(self):
-        print('todo')
+        if (self.download_firmware == True):
+            return self.get_rand_checkin_time()
+        elif (self.download_complete == True):
+            
+            return self.get_rand_checkin_time()
+        else:
+            
+            return 'complete'
     
 
 def main():
@@ -115,19 +131,22 @@ def main():
     
     for i in range(GW_total):
         gw_list.append(GW())
-        for j in range(RW_total):
-            #making sure have RW for each GW
-            gw_list[i].add_RP()
-            print(gw_list[i].RP_list[j].checkin_offset)
-        
         gw_list[i].GW_checkin()
         if (gw_list[i].download_time > 5.00):
             #download or upgrade exceeds 5 min, wait (or in my case just add 5 min to total
             gw_list[i].download_time += 5.00
             gw_list[i].current_time += 5.00
+            
+        for j in range(RW_total):
+            #making sure have RW for each GW
+            gw_list[i].add_RP()
+            gw_list[i].RP_list[j].RP_checkin(gw_list[i])
+            #print(gw_list[i].RP_list[j].checkin_offset)
         
     for obj in gw_list:
         print(obj.checkin_offset, obj.download_time, obj.upgrade_time, round(obj.current_time, 2))
+        for rp_ob in obj.RP_list:
+            print(" ", rp_ob.checkin_offset, rp_ob.download_time, rp_ob.upgrade_time, round(rp_ob.current_time,2))
 
 if __name__ == "__main__":
     main()
