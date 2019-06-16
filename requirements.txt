@@ -21,3 +21,8 @@ GW RULE - GW must wait to begin upgrade process until each RP is download_comple
 
 RP RULE - RP can check in if (RP ! begun proc#2 and GW ! begun proc#2) OR (RP and GW == upgrade_complete)
 
+Q&A:
+1) between 12 to 13 minutes
+2) 
+3) GW with 3 RP each
+4) Increase average by 1 minute, longer wait for checkins
