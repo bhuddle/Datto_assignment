@@ -1,68 +1,75 @@
-#from sys import time
 import random as rand
 import math 
 import statistics as stat
 
-# Python 3.7 for Datto assigmnet
+"""
+# Datto Assignment by Benjamin Huddle
+# 6/16/2019
 # AP = access point
 # GW = gateway
 # RP = repeater
 """
- Create a list of gateway, router
- 
-"""
 
-total_time = 0.00
-
+#AP Class that is a parent of both RP and GW (since both are AP)
 class AP:
+
+    # Initialize all flags and variables used by both classes
     def __init__(self):
-        #Set flags to false
         self.download_firmware = False
         self.download_complete = False
         self.upgrade_complete = False
         
-        #Set offset and times to 0
         self.checkin_offset = 0.00
         self.download_time = 0.00
         self.upgrade_time = 0.00
         self.current_time = 0.00
         
-        #Set lower and upper ranges for random times
         self.low = 0.00
         self.high = 6.00
 
+
+    # Function that produces the random checkin times for each 
+    # RP and GW
     def get_rand_checkin_time(self):
         time = None
         return self.converter(time)
         
+    
+    # Function that converts any time greater .59 to the next
+    # minute.  For instance, 4.71 becomes 5.21
+    # Additional rounding to keep the precision to 2 decimals
     def converter(self, time):
         if (time == None):
             time = round(rand.uniform(self.low, self.high), 2)
         ad = round(time%1, 2)
-        #converting to get format in mm:ss
+        
         if (ad > .59):
             time = math.floor(time)
             time = (time + 1.00) + (ad - .60)
             time = round(time, 2)
         else:
             time = round(time, 2)
+            
         return time
         
 
+# Inherited class of AP, Gateway class has functions
+# with logic based towards assessment guidelines
 class GW(AP):
+
+    #initialize the list of RP each GW has
     def __init__(self):
         super().__init__()
         self.RP_list = []
         
         
+    # Adds the RP to the list of RP's
     def add_RP(self):
         self.RP_list.append(RP())
         
-        
-    def pop_RP(self):
-        print('todo')
     
-    
+    # GW specific checkin. Gets initial checkin time offset, then
+    # proceeds to iterate through each checkin
     def GW_checkin(self):
         if (self.checkin_offset == self.low):
             #get checkin time
@@ -74,7 +81,6 @@ class GW(AP):
             self.download_firmware = True
             self.download_time = self.GW_process()
             if (self.download_time >= self.high):
-                #download or upgrade exceeds 5 min, wait (or in my case just add 5 min to total
                 self.download_time += self.high
                 self.download_time = self.converter(self.download_time)
             self.current_time += self.download_time
@@ -86,7 +92,6 @@ class GW(AP):
             self.download_complete = True
             self.upgrade_time = self.GW_process()
             if (self.upgrade_time >= self.high):
-                #download or upgrade exceeds 5 min, wait (or in my case just add 5 min to total
                 self.upgrade_time += self.high
                 self.upgrade_time = self.converter(self.upgrade_time)
             self.current_time += self.upgrade_time
@@ -189,9 +194,19 @@ def getCheckin(gw_list, life, time):
         for rp in gw.RP_list:
             if ((rp.checkin_offset + rp.download_time + rp.upgrade_time) < time):
                 life.append("complete")
-            elif () #need to finish this 
-            #offset + download > time its downloading
-            #offset + download + upgrade > time it is upgrading idfk
+            elif ((rp.checkin_offset + rp.download_time) > time):
+                life.append("downloading")
+            elif ((rp.checkin_offset + rp.download_time) < time):
+                life.append("upgrading")
+        if ((gw.checkin_offset + gw.download_time + gw.upgrade_time) < time):
+            life.append("complete")
+        elif ((gw.checkin_offset + gw.download_time) > time):
+            life.append("downloading")
+        elif ((gw.checkin_offset + gw.download_time) < time):
+            life.append("upgrading")
+            
+    d = {x:life.count(x) for x in life}
+    return d
 
 
 def main():
@@ -202,6 +217,8 @@ def main():
     gw_list = []
     avg = []
     life = []
+    life2 = {}
+    lifecycle = {'complete':0, 'upgrading':0, 'downloading':0}
     GW_total = 10 #10 GW total
     RW_total = 2 # 2 per GW
     time = 8 # 8 min mark
@@ -209,21 +226,19 @@ def main():
     
     for i in range(0,10):
         run(gw_list, GW_total, RW_total, avg)
-        """for obj in gw_list:
-            print("GW: {} {} {} {}".format(obj.checkin_offset, obj.download_time, obj.upgrade_time, obj.converter(obj.current_time)))
-            for rp_ob in obj.RP_list:
-                print("   RP: {} {} {} {}".format(rp_ob.checkin_offset, rp_ob.download_time, rp_ob.upgrade_time, rp_ob.converter(rp_ob.current_time)))
-                """
-        getCheckin(gw_list, life, time)
-            
+        life2 = getCheckin(gw_list, life, time)
+        lifecycle['complete'] += life2['complete']
+        lifecycle['upgrading'] += life2['upgrading']
+        lifecycle['downloading'] += life2['downloading']
         
         for GW in gw_list:
             GW.RP_list.clear()
         gw_list.clear()
+        life.clear()
         
     
-    print("{}".format(round(stat.mean(avg),2)))
-    
+    print("Mean of {} runs: {}".format(10, round(stat.mean(avg),2)))
+    print("Upgrade point lifecycle: {}".format(lifecycle))
     
         
 
