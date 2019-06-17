@@ -23,6 +23,6 @@ RP RULE - RP can check in if (RP ! begun proc#2 and GW ! begun proc#2) OR (RP an
 
 Q&A:
 1) between 12 to 13 minutes
-2) 
+2) varies, 'complete': 102, 'upgrading': 105, 'downloading': 93
 3) GW with 3 RP each
 4) Increase average by 1 minute, longer wait for checkins

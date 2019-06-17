@@ -69,24 +69,21 @@ class GW(AP):
         
     
     # GW specific checkin. Gets initial checkin time offset, then
-    # proceeds to iterate through each checkin
+    # proceeds to iterate through each checkin in order
+    # download, download complete, then upgrade complete
     def GW_checkin(self):
         if (self.checkin_offset == self.low):
-            #get checkin time
             self.checkin_offset = self.get_rand_checkin_time()
             self.current_time += self.checkin_offset
         
         if (self.download_firmware == False):
-            #begin download
             self.download_firmware = True
             self.download_time = self.GW_process()
             if (self.download_time >= self.high):
                 self.download_time += self.high
                 self.download_time = self.converter(self.download_time)
-            self.current_time += self.download_time
-            
+            self.current_time += self.download_time    
         elif (self.download_complete == False):
-            #Must wait for each RP to set 'download_complete' = True
             for rp in self.RP_list:
                 rp.RP_checkin(self)
             self.download_complete = True
@@ -102,44 +99,40 @@ class GW(AP):
                 rp.RP_checkin(self)
             
             
-            
+    # Returns the checkin time / download time / upgrade time
     def GW_process(self):
         if (self.download_firmware == True):
             return self.get_rand_checkin_time()
         elif (self.download_complete == True):
-            #Must wait for each RP to set 'download_complete' = True
             return self.get_rand_checkin_time()
         else:
-            #complete at this point
             return 'complete'
     
 
+# RP class that inherits from AP class.  Same methods as GW
+# but instead the logic is geared for RP's
 class RP(AP):
+
+    # Checkin only if certain flags are set true.
+    # takes GW as object to verify flags
     def RP_checkin(self, gw):
         if ((self.download_complete != True and gw.download_complete != True)
                 or (self.upgrade_complete == True and gw.upgrade_complete == True)):
-    
             if (self.checkin_offset == self.low):
                 self.checkin_offset = self.get_rand_checkin_time()
                 self.current_time += self.checkin_offset
         
-        
             if (self.download_firmware == False):
-                #begin download
                 self.download_firmware = True
                 self.download_time = self.RP_process()
                 if (self.download_time >= self.high):
-                    #download or upgrade exceeds 5 min, wait (or in my case just add 5 min to total
                     self.download_time += self.high
                     self.download_time = self.converter(self.download_time)
                 self.current_time += self.download_time
-                
             elif (self.download_complete == False):
-                #download complete, update
                 self.download_complete = True
                 self.upgrade_time = self.RP_process()
                 if (self.upgrade_time >= self.high):
-                    #download or upgrade exceeds 5 min, wait (or in my case just add 5 min to total
                     self.upgrade_time += self.high
                     self.upgrade_time = self.converter(self.upgrade_time)
                 self.current_time += self.upgrade_time
@@ -147,37 +140,38 @@ class RP(AP):
                 self.upgrade_complete = True
     
             
-        
+    # RP process returns update / download time
     def RP_process(self):
         if (self.download_firmware == True):
             return self.get_rand_checkin_time()
         elif (self.download_complete == True):
             return self.get_rand_checkin_time()
         else:
-            
             return 'complete'
     
 
+# Function to simplify running multiple runs
+# gw_list is the list of GW
+# GW_total is the total number of GW's
+# RW_total is the total number of RW's
+# avg is the mean or average of run
 def run(gw_list, GW_total, RW_total, avg):
     for i in range(GW_total):
         gw_list.append(GW())
-        #first GW checkin
         gw_list[i].GW_checkin()
             
         for j in range(RW_total):
-            #making sure have RW for each GW
             gw_list[i].add_RP()
-            #first RP checkin
             gw_list[i].RP_list[j].RP_checkin(gw_list[i])
-            #print(gw_list[i].RP_list[j].checkin_offset)
         
-        #contains both 2nd GW and RP checkin
         gw_list[i].GW_checkin()
-        
         gw_list[i].GW_checkin()
         
     avg.append(getAvg(gw_list))
 
+
+# Function to calculate the average of list of gateways
+# GW_list is the list of GW objects
 def getAvg(gw_list):
     totalAP = []
     upgrade = []
@@ -189,6 +183,12 @@ def getAvg(gw_list):
         upgrade.clear()
     return round(stat.mean(totalAP),2)
     
+    
+# Function for checking status of specific checkin time
+# GW_list is the list of GW objects 
+# life is the list of status's such as downloading, upgrading
+# and complete
+# time is the time in which user wants to check 
 def getCheckin(gw_list, life, time):
     for gw in gw_list:
         for rp in gw.RP_list:
@@ -209,16 +209,13 @@ def getCheckin(gw_list, life, time):
     return d
 
 
+# main loop of program
 def main():
-    #need to get average upgrade time over 10 runs
-    #need to get status of all AP at certain time
-    #4GW with 3 RP each vs 3 GW with 4 RP each
-    #change time to 0.00 to 6.00, how does that effect run - new challenges
-    gw_list = []
-    avg = []
-    life = []
-    life2 = {}
-    lifecycle = {'complete':0, 'upgrading':0, 'downloading':0}
+    gw_list = [] # list of GW objects
+    avg = [] # list of averages
+    life = [] # lifecycle checkin data, later for calc totals
+    life2 = {} # dict of count of below, per run
+    lifecycle = {'complete':0, 'upgrading':0, 'downloading':0} #totals
     GW_total = 10 #10 GW total
     RW_total = 2 # 2 per GW
     time = 8 # 8 min mark
@@ -241,7 +238,5 @@ def main():
     print("Upgrade point lifecycle: {}".format(lifecycle))
     
         
-
-
 if __name__ == "__main__":
     main()
